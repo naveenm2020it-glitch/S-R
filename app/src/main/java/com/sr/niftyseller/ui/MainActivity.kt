@@ -40,6 +40,7 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var progress: ProgressBar
     private lateinit var dateButton: Button
+    private lateinit var loadButton: Button
     private lateinit var expirySpinner: Spinner
     private lateinit var analyzeButton: Button
     private lateinit var resultsContainer: LinearLayout
@@ -80,6 +81,7 @@ class MainActivity : Activity() {
                 datePicker.maxDate = System.currentTimeMillis()
             }.show()
         }
+        loadButton = button("Load official session data") { loadHistory() }
         expirySpinner = Spinner(this).apply {
             contentDescription = "NIFTY expiry shared by all validated sessions"
             setBackgroundColor(panel)
@@ -91,12 +93,13 @@ class MainActivity : Activity() {
             visibility = View.GONE
         }
         root.addView(progress, matchWrap())
-        status = text("Choose an NSE trading date to download and validate its report set and the preceding 21 complete sessions.", 13, muted)
+        status = text("Select a trading date, then load its 22-session official report window. Expiries unlock after all required files validate.", 13, muted)
         status.setPadding(0, dp(8), 0, dp(8))
         analyzeButton = button("Analyze selected expiry") { analyze() }.apply { isEnabled = false }
         section("S1 / S2 · R1 / R2")
         resultsContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(resultsContainer, matchWrap())
+        showEmptyResults("No analysis yet", "Load and validate the official session data, choose an expiry, then analyze.")
         section("Multi-strike evidence")
         text("Call/put open interest, one-session change, premium change, volume and repeated EOD writing proxies. Writer identity and intraday absorption are not observable in these public EOD reports.", 13, muted)
         section("Data provenance")
@@ -110,12 +113,15 @@ class MainActivity : Activity() {
     private fun loadHistory() {
         if (isLoading) return
         isLoading = true
+        loadButton.isEnabled = false
+        loadButton.text = "Loading official session data…"
         progress.visibility = View.VISIBLE
         analyzeButton.isEnabled = false
         expirySpinner.isEnabled = false
         history = emptyList()
         expiries = emptyList()
         resultsContainer.removeAllViews()
+        showEmptyResults("Loading session window", "Checking official NSE archives and validating all three reports for each of 22 sessions.")
         status.text = "Preparing official NSE archive checks…"
         Thread {
             try {
@@ -129,6 +135,8 @@ class MainActivity : Activity() {
                     expirySpinner.adapter = adapter
                     expirySpinner.isEnabled = true
                     analyzeButton.isEnabled = true
+                    resultsContainer.removeAllViews()
+                    showEmptyResults("Ready to analyze", "${loaded.sessions.size} validated sessions are ready. Select one of ${loaded.expiries.size} shared expiries, then tap Analyze selected expiry.")
                     status.text = "Validated ${loaded.sessions.size}/22 unique EOD sessions (${loaded.sessions.first().date} → ${loaded.sessions.last().date}); all 3 official reports per session and matching NIFTY contract IDs checked. ${loaded.reports.size} report files · ${loaded.reports.sumOf { it.bytes } / (1024 * 1024)} MiB in temporary cache."
                     progress.visibility = View.GONE
                     isLoading = false
@@ -136,11 +144,17 @@ class MainActivity : Activity() {
                 }
             } catch (error: Exception) {
                 runOnUiThread {
-                    status.text = "Not ready: ${error.message ?: error.javaClass.simpleName}\nNo fallback or substitute dataset was used."
+                    val detail = error.message ?: error.javaClass.simpleName
+                    status.text = "Could not load a complete official session window. Check your internet connection and try again. $detail No fallback or substitute dataset was used."
+                    resultsContainer.removeAllViews()
+                    showEmptyResults("Session data unavailable", "Expiry selection and analysis unlock only after all 22 official sessions validate. Use the button above to retry.")
                     progress.visibility = View.GONE
                     isLoading = false
+                    loadButton.isEnabled = true
+                    loadButton.text = "Retry loading official data"
                     refreshDeleteButton()
                 }
+
             }
         }.start()
     }
@@ -241,6 +255,13 @@ class MainActivity : Activity() {
         if (bold) setTypeface(typeface, Typeface.BOLD)
         setPadding(0, dp(3), 0, dp(3))
         root.addView(this, matchWrap())
+    }
+
+    private fun showEmptyResults(title: String, description: String) {
+        card {
+            text(title, 15, textColor, true)
+            text(description, 13, muted)
+        }
     }
 
     private fun card(content: LinearLayout.() -> Unit) {
