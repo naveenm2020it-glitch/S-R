@@ -22,7 +22,7 @@
 | 7 — Android dashboard | In progress | Native dashboard compiles into the release package and includes date/expiry controls, report status, analysis, provenance and caveats. No emulator/device UI test was available in this environment. |
 | 8 — Temporary data and deletion | In progress | Downloaded archives and manifests use app cache; user-confirmed deletion clears those files and in-memory analysis. Device-level deletion behavior still needs Android runtime verification. |
 | 9 — Tests and bug fixing | In progress | `testDebugUnitTest` passes, including the genuine 22-session parse-and-analysis integration test and six total unit/integration cases. Downloader format/edge-case coverage is not exhaustive. |
-| 10 — Release APK | In progress | `assembleRelease` produced a 668,933-byte APK (`com.sr.niftyseller`, version 0.1.0), verified with APK Signature Scheme v2 and a temporary Android debug certificate. GitHub Actions artifact and emulator verification remain pending. |
+| 10 — Release APK | In progress | `assembleRelease` produced a signed APK (`com.sr.niftyseller`, version 0.1.0), verified with APK Signature Scheme v2 and a temporary Android debug certificate. The first GitHub Actions run failed before creating any jobs/checks and produced no artifact or logs; retry/dispatch calls are denied by the current GitHub integration scope. The verified APK is available as a direct download; emulator verification remains unavailable. |
 
 ## Guardrails and known validation boundary
 
